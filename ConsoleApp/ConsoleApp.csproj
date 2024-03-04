@@ -48,6 +48,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Opis.md" />
     <None Include="App.config" />
     <Content Include="data.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
