@@ -1,16 +1,21 @@
 ﻿using System.Collections.ObjectModel;
+using System.Linq;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace ConsoleApp
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-
-
     public class DataReader
     {
-        private ICollection<ImportedObjectBaseClass> ImportedObjects { get; set; }
-        private Dictionary<Tuple<string, string>, ICollection<ImportedObjectBaseClass>> ObjectsSorted { get; set; }
+        private IEnumerable<ImportedObjectBaseClass> ImportedObjects { get; set; }
+        private Dictionary<(string, string), IEnumerable<ImportedObjectBaseClass>> ObjectsDict { get; set; }
+
+        public DataReader()
+        {
+            ImportedObjects = new Collection<ImportedObjectBaseClass>();
+            ObjectsDict = new Dictionary<(string, string), IEnumerable<ImportedObjectBaseClass>>();
+        }
        
         public void ImportData(string fileToImport)
         {
@@ -19,10 +24,92 @@ namespace ConsoleApp
             // AssignNumberOfChildren();
             // PrintData();
             // Console.ReadLine();
+            Console.WriteLine(ImportedObjects);
+            Console.WriteLine(ObjectsDict);
         }
 
         private void PrintData()
         {
+            
+        }
+        private void ImportObjectsFromFile(string fileToImport)
+        {
+            var streamReader = new StreamReader(fileToImport);
+            while (!streamReader.EndOfStream)
+            {
+                var line = streamReader.ReadLine();
+                
+                if (string.IsNullOrEmpty(line) || line.Equals(Environment.NewLine)) continue; 
+                
+                var values = line.Split(';');
+                if (values.Length != 7) continue;
+                var newObject = new ImportedObject();
+                newObject.MapFrom(values);
+                ImportedObjects = ImportedObjects.Append(newObject);
+                AppendToDictionary(newObject);
+            }
+        }
+
+        private void AppendToDictionary(ImportedObjectBaseClass newObject)
+        {
+            var newObjectKey = newObject.GetKey();
+            if (ObjectsDict.ContainsKey(newObjectKey))
+            {
+                ObjectsDict[newObjectKey] = ObjectsDict[newObjectKey].Append(newObject);
+            }
+            else
+            {
+                ObjectsDict.Add(newObjectKey, new Collection<ImportedObjectBaseClass>{newObject});
+            }
+        }
+        
+        private void AssignNumberOfChildren()
+        {
+            foreach (var importedObject in ImportedObjects)
+            {
+                var objKey = importedObject.GetKey();
+                importedObject.
+            }
+            
+        //     for (int i = 0; i < ImportedObjects.Count(); i++)
+        //     {
+        //         var importedObject = ImportedObjects.ToArray()[i];
+        //         foreach (var impObj in ImportedObjects)
+        //         {
+        //             if (impObj.ParentType == importedObject.Type)
+        //             {
+        //                 if (impObj.ParentName == importedObject.Name)
+        //                 {
+        //                     importedObject.NumberOfChildren = 1 + importedObject.NumberOfChildren;
+        //                 }
+        //             }
+        //         }
+        //     }
+        }
+        
+    }
+
+    public class ImportedObject : ImportedObjectBaseClass
+    {
+        public string Schema { get; set; }
+        public string ParentName { get; set; }
+        public string ParentType { get; set; }
+        public string DataType { get; set; }
+        public string IsNullable { get; set; }
+        public double NumberOfChildren { get; set; }
+
+        public override void MapFrom(string[] values)
+        {  
+            Type = ProcessString(values[0]).ToUpper();
+            Name = ProcessString(values[1]);
+            Schema = ProcessString(values[2]);
+            ParentName = ProcessString(values[3]);
+            ParentType = ProcessString(values[4]);
+            DataType = ProcessString(values[5]);
+            IsNullable = ProcessString(values[6]);
+        }
+        public override void Print()
+        { 
             // foreach (var database in ImportedObjects)
             // {
             //     if (database.Type == "DATABASE")
@@ -55,115 +142,10 @@ namespace ConsoleApp
             //     }
             // } 
         }
-        private void ImportObjectsFromFile(string fileToImport)
-        {
-            // ImportedObjects = new List<ImportedObjectBaseClass>();
 
-            var streamReader = new StreamReader(fileToImport);
-            // var importedLines = new List<string>();
-            
-            while (!streamReader.EndOfStream)
-            {
-                var line = streamReader.ReadLine();
-                var values = streamReader.ReadLine()?.Split(';');
-                // importedLines.Add(line);
-                var newObject = new ImportedObject();
-                newObject.MapFrom(values);
-                // append to collection
-                ImportedObjects.Add(newObject);
-                // append to dictionary
-                AppendToDictionary(newObject);
-            }
-            // for (int i = 0; i <= importedLines.Count; i++)
-            // {
-            //     var importedLine = importedLines[i];
-            //     var values = importedLine.Split(';');
-            //     var importedObject = new ImportedObject();
-            //     importedObject.MapFrom(values);
-            //     // importedObject.Type = values[0];
-            //     // importedObject.Name = values[1];
-            //     // importedObject.Schema = values[2];
-            //     // importedObject.ParentName = values[3];
-            //     // importedObject.ParentType = values[4];
-            //     // importedObject.DataType = values[5];
-            //     // importedObject.IsNullable = values[6];
-            //     ImportedObjects.Add(importedObject);
-            // }
-        }
-
-        private void AppendToDictionary(ImportedObjectBaseClass newObject)
+        public override (string, string) GetKey()
         {
-            var newObjectKey = new Tuple<string, string>(newObject.Type, newObject.Name);
-            if (ObjectsSorted.ContainsKey(newObjectKey))
-            {
-                ObjectsSorted[newObjectKey].Add(newObject);
-            }
-            else
-            {
-                ObjectsSorted.Add(newObjectKey, new Collection<ImportedObjectBaseClass>{newObject});
-            }
-        }
-        // private void ProcessImportedData()
-        // {
-        //     // var aaaa = new ImportedObject
-        //     // {
-        //     //     Name = null,
-        //     //     Type = null,
-        //     //     Schema = null,
-        //     //     ParentName = null,
-        //     //     ParentType = null,
-        //     //     DataType = null,
-        //     //     IsNullable = null,
-        //     //     NumberOfChildren = 0
-        //     // };
-        //     
-        //     // clear and correct imported data
-        //     // foreach (var importedObject in ImportedObjects)
-        //     // {
-        //     //     importedObject.Type = importedObject.Type.Trim().Replace(" ", "").Replace(Environment.NewLine, "").ToUpper();
-        //     //     importedObject.Name = importedObject.Name.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
-        //     //     importedObject.Schema = importedObject.Schema.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
-        //     //     importedObject.ParentName = importedObject.ParentName.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
-        //     //     importedObject.ParentType = importedObject.ParentType.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
-        //     // }
-        // }
-        
-        private void AssignNumberOfChildren()
-        {
-        //     for (int i = 0; i < ImportedObjects.Count(); i++)
-        //     {
-        //         var importedObject = ImportedObjects.ToArray()[i];
-        //         foreach (var impObj in ImportedObjects)
-        //         {
-        //             if (impObj.ParentType == importedObject.Type)
-        //             {
-        //                 if (impObj.ParentName == importedObject.Name)
-        //                 {
-        //                     importedObject.NumberOfChildren = 1 + importedObject.NumberOfChildren;
-        //                 }
-        //             }
-        //         }
-        //     }
-        }
-    }
-
-    public class ImportedObject : ImportedObjectBaseClass
-    {
-        public string Schema { get; set; }
-        public string ParentName { get; set; }
-        public string ParentType { get; set; }
-        public string DataType { get; set; }
-        public string IsNullable { get; set; }
-        public double NumberOfChildren { get; set; }
-
-        public override void MapFrom(string[] line)
-        {
-            // map line values to properties
-        }
-
-        public override void Print()
-        {
-            // print out data
+            return (ParentType, ParentName);
         }
     }
 
@@ -171,13 +153,13 @@ namespace ConsoleApp
     {
         public string Name { get; set; }
         public string Type { get; set; }
-
-        public string ProcessString(string stringToProcess)
+        protected static string ProcessString(string stringToProcess)
         {
+            // TYPE ToUpper() !!
             return stringToProcess.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
         }
         public abstract void MapFrom(string[] line);
-
         public abstract void Print();
+        public abstract (string, string) GetKey();
     }
 }
