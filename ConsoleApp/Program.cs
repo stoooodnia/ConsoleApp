@@ -6,6 +6,7 @@
         {
             var reader = new DataReader();
             reader.ImportData("data.csv");
+            reader.PrintData();
         }
     }
 }
